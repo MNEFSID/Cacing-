@@ -59,6 +59,14 @@
   <div class="logoutLink" id="logoutLink">Keluar akun</div>
 </div>
 
+<!-- LEADERBOARD SCREEN -->
+<div class="screen" id="leaderboardScreen">
+  <div class="logo" style="font-size:36px;margin-bottom:4px;">LEADERBOARD</div>
+  <div class="tagline">pemain dengan exp terbanyak</div>
+  <div class="lbList" id="lbList"><div class="lbEmpty">Memuat...</div></div>
+  <div class="logoutLink" id="lbBackLink">&larr; Kembali ke lobby</div>
+</div>
+
 <!-- HUD -->
 <div id="hud">
   <div class="score">0</div>
@@ -219,8 +227,39 @@
   });
 
   document.getElementById('leaderboardMenuBtn').addEventListener('click', () => {
-    window.location.href = 'lb.html';
+    document.getElementById('lobbyScreen').classList.remove('visible');
+    document.getElementById('leaderboardScreen').classList.add('visible');
+    loadLeaderboard();
   });
+
+  document.getElementById('lbBackLink').addEventListener('click', () => {
+    document.getElementById('leaderboardScreen').classList.remove('visible');
+    document.getElementById('lobbyScreen').classList.add('visible');
+  });
+
+  function loadLeaderboard() {
+    const listEl = document.getElementById('lbList');
+    listEl.innerHTML = '<div class="lbEmpty">Memuat...</div>';
+    db.ref('users').orderByChild('exp').limitToLast(50).once('value')
+      .then(snap => {
+        if (!snap.exists()) { listEl.innerHTML = '<div class="lbEmpty">Belum ada pemain terdaftar.</div>'; return; }
+        const users = [];
+        snap.forEach(child => users.push(child.val()));
+        users.sort((a, b) => (b.exp || 0) - (a.exp || 0));
+        listEl.innerHTML = users.map((u, i) => `
+          <div class="lbRow">
+            <div class="lbRank">${i + 1}</div>
+            <div class="lbAvatar">${(u.name || '?').charAt(0).toUpperCase()}</div>
+            <div class="lbInfo">
+              <div class="lbName">${u.name || 'Tanpa nama'}</div>
+              <div class="lbLvl">Level ${u.level || 1}</div>
+            </div>
+            <div class="lbExp">${u.exp || 0} EXP</div>
+          </div>
+        `).join('');
+      })
+      .catch(() => { listEl.innerHTML = '<div class="lbEmpty">Gagal memuat leaderboard.</div>'; });
+  }
 
   document.getElementById('joinServer1').addEventListener('click', async () => {
     const snap = await db.ref('servers/' + SERVER_ID + '/players').once('value');
@@ -408,13 +447,14 @@
   function checkCollisions() {
     const p = getPlayer();
     if (!p || !p.alive) return;
-    const head = p.segs[0], headR = 9;
+    const head = p.segs[0], headR = wormRadius(p) * 0.7;
     for (const other of worms) {
       if (!other.alive) continue;
+      const otherR = wormRadius(other) * 0.65;
       const startIdx = other === p ? 8 : 0;
       for (let i = startIdx; i < other.segs.length; i++) {
         const s = other.segs[i];
-        if (dist2(head.x, head.y, s.x, s.y) < (headR + 6) * (headR + 6)) { killLocalPlayer(); return; }
+        if (dist2(head.x, head.y, s.x, s.y) < (headR + otherR) * (headR + otherR)) { killLocalPlayer(); return; }
       }
     }
   }
@@ -429,6 +469,15 @@
     const expGain = Math.floor(p.len);
     const ranked = [...worms].sort((a, b) => b.len - a.len);
     const rank = ranked.findIndex(w => w.id === playerId) + 1;
+
+    // drop the body as food orbs for others (and self) to eat
+    for (let i = 0; i < p.segs.length; i += 2) {
+      const seg = p.segs[i];
+      db.ref('servers/' + SERVER_ID + '/food').push({
+        x: seg.x + rand(-8, 8), y: seg.y + rand(-8, 8),
+        r: rand(4, 7), color: p.color
+      });
+    }
 
     if (myPlayerRef) myPlayerRef.remove();
 
@@ -492,9 +541,13 @@
       ctx.globalAlpha = 1;
     }
   }
+  function wormRadius(w) {
+    return 7 + Math.min(22, Math.sqrt(w.len) * 1.6);
+  }
+
   function drawWorm(w) {
     if (!w.alive) return;
-    const segR = 8 + Math.min(10, w.len * 0.05);
+    const segR = wormRadius(w);
     for (let i = w.segs.length - 1; i >= 0; i--) {
       const seg = w.segs[i]; const s = worldToScreen(seg.x, seg.y);
       if (s.x < -40 || s.x > canvas.width + 40 || s.y < -40 || s.y > canvas.height + 40) continue;
