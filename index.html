@@ -39,23 +39,34 @@
       <div class="ulevel" id="lobbyLevel">Level 1 • 0 EXP</div>
     </div>
   </div>
-  <div class="serverCard">
-    <div>
-      <div class="sName">Server 1</div>
-      <div class="sSlot" id="server1Slot">.../20 pemain</div>
-    </div>
-    <button class="joinBtn" id="joinServer1">MAIN</button>
+
+  <div id="lobbyMenu" style="width:100%;max-width:320px;">
+    <button class="btnPrimary" id="playMenuBtn" style="margin-bottom:12px;">PLAY</button>
+    <button class="btnGhost" id="leaderboardMenuBtn">LEADERBOARD</button>
   </div>
+
+  <div id="serverListSection" style="width:100%;max-width:320px;display:none;">
+    <div class="serverCard">
+      <div>
+        <div class="sName">Server 1</div>
+        <div class="sSlot" id="server1Slot">.../20 pemain</div>
+      </div>
+      <button class="joinBtn" id="joinServer1">MAIN</button>
+    </div>
+    <div class="logoutLink" id="backToMenuLink" style="text-align:center;">&larr; Kembali</div>
+  </div>
+
   <div class="logoutLink" id="logoutLink">Keluar akun</div>
 </div>
 
 <!-- HUD -->
 <div id="hud">
   <div class="score">0</div>
-  <div style="color:#5f7285;font-size:11px;letter-spacing:1px;">PANJANG</div>
 </div>
-<div id="leaderboard"><h3>Papan Skor</h3><div id="lbRows"></div></div>
-<div id="minimapWrap"><canvas id="minimap" width="130" height="130"></canvas></div>
+<div id="topRightPanel">
+  <div id="leaderboard"><h3>Papan Skor</h3><div id="lbRows"></div></div>
+  <div id="minimapWrap"><canvas id="minimap" width="130" height="130"></canvas></div>
+</div>
 <div id="boostBar"><div id="boostFill"></div></div>
 <div id="joystickZone"></div>
 <div id="joyBase"></div>
@@ -180,6 +191,8 @@
     document.getElementById('lobbyAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
     document.getElementById('lobbyName').textContent = currentUser.name;
     document.getElementById('lobbyLevel').textContent = `Level ${currentUser.level} • ${currentUser.exp} EXP`;
+    document.getElementById('lobbyMenu').style.display = 'block';
+    document.getElementById('serverListSection').style.display = 'none';
     watchServerCount();
   }
 
@@ -194,6 +207,20 @@
       document.getElementById('joinServer1').disabled = n >= MAX_PLAYERS;
     });
   }
+
+  document.getElementById('playMenuBtn').addEventListener('click', () => {
+    document.getElementById('lobbyMenu').style.display = 'none';
+    document.getElementById('serverListSection').style.display = 'block';
+  });
+
+  document.getElementById('backToMenuLink').addEventListener('click', () => {
+    document.getElementById('serverListSection').style.display = 'none';
+    document.getElementById('lobbyMenu').style.display = 'block';
+  });
+
+  document.getElementById('leaderboardMenuBtn').addEventListener('click', () => {
+    window.location.href = 'lb.html';
+  });
 
   document.getElementById('joinServer1').addEventListener('click', async () => {
     const snap = await db.ref('servers/' + SERVER_ID + '/players').once('value');

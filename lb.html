@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Leaderboard - Cacing.io</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; min-height: 100%;
+    background: #060a10;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  body {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 40px 16px 60px;
+    background: radial-gradient(ellipse at center, #0d1420 0%, #060a10 70%);
+  }
+  .logo {
+    font-family: Impact, 'Arial Black', sans-serif;
+    font-size: 40px; letter-spacing: 2px;
+    background: linear-gradient(90deg, #39ff88, #35e2ff, #ff3df0);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 18px rgba(53,226,255,0.35));
+    margin-bottom: 4px; text-align: center;
+  }
+  .tagline {
+    color: #5f7285; font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 28px; text-align: center;
+  }
+  .list {
+    width: 100%; max-width: 380px;
+    background: rgba(11,18,27,0.7); border: 1px solid #1c2733;
+    border-radius: 16px; padding: 10px; backdrop-filter: blur(6px);
+  }
+  .row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border-radius: 10px;
+  }
+  .row:not(:last-child) { border-bottom: 1px solid #131c26; }
+  .rank {
+    width: 26px; text-align: center; font-weight: 800; font-size: 15px; color: #5f7285;
+  }
+  .row:nth-child(1) .rank { color: #ffd93d; }
+  .row:nth-child(2) .rank { color: #c9d6e0; }
+  .row:nth-child(3) .rank { color: #d4874a; }
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #39ff88, #35e2ff);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: #04101a; font-size: 14px;
+  }
+  .info { flex: 1; min-width: 0; }
+  .info .name { font-size: 14px; font-weight: 700; color: #e6f1f8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .info .lvl { font-size: 11px; color: #5f7285; }
+  .exp { font-weight: 800; color: #39ff88; font-size: 15px; white-space: nowrap; }
+  .empty { color: #5f7285; text-align: center; padding: 30px 10px; font-size: 13px; }
+  .backLink {
+    margin-top: 22px; color: #4a5b6b; font-size: 12px; cursor: pointer; text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+  <div class="logo">LEADERBOARD</div>
+  <div class="tagline">pemain dengan exp terbanyak</div>
+  <div class="list" id="list">
+    <div class="empty">Memuat...</div>
+  </div>
+  <div class="backLink" onclick="location.href='index.html'">&larr; Kembali ke lobby</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCJxJtA7ga5_FGOLdts2ULxNoEO7cp-JrA",
+    authDomain: "cacing-661f1.firebaseapp.com",
+    databaseURL: "https://cacing-661f1-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "cacing-661f1",
+    storageBucket: "cacing-661f1.firebasestorage.app",
+    messagingSenderId: "579218724882",
+    appId: "1:579218724882:web:12bd8ee9f52090a0f860cb"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  db.ref('users').orderByChild('exp').limitToLast(50).once('value')
+    .then(snap => {
+      const list = document.getElementById('list');
+      if (!snap.exists()) { list.innerHTML = '<div class="empty">Belum ada pemain terdaftar.</div>'; return; }
+
+      const users = [];
+      snap.forEach(child => users.push(child.val()));
+      users.sort((a, b) => (b.exp || 0) - (a.exp || 0));
+
+      list.innerHTML = users.map((u, i) => `
+        <div class="row">
+          <div class="rank">${i + 1}</div>
+          <div class="avatar">${(u.name || '?').charAt(0).toUpperCase()}</div>
+          <div class="info">
+            <div class="name">${u.name || 'Tanpa nama'}</div>
+            <div class="lvl">Level ${u.level || 1}</div>
+          </div>
+          <div class="exp">${u.exp || 0} EXP</div>
+        </div>
+      `).join('');
+    })
+    .catch(() => {
+      document.getElementById('list').innerHTML = '<div class="empty">Gagal memuat leaderboard.</div>';
+    });
+</script>
+</body>
+</html>
