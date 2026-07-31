@@ -451,7 +451,11 @@
     for (const other of worms) {
       if (!other.alive) continue;
       const otherR = wormRadius(other) * 0.65;
-      const startIdx = other === p ? 8 : 0;
+      const isSelf = other === p;
+      // skip enough of the "neck" segments near the head so a sharp turn
+      // (e.g. chasing nearby food) doesn't falsely register as self-collision;
+      // the safe zone scales with the worm's own size
+      const startIdx = isSelf ? Math.max(8, Math.ceil(headR * 1.8)) : 0;
       for (let i = startIdx; i < other.segs.length; i++) {
         const s = other.segs[i];
         if (dist2(head.x, head.y, s.x, s.y) < (headR + otherR) * (headR + otherR)) { killLocalPlayer(); return; }
